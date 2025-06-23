@@ -1,19 +1,12 @@
 "use client";
 //components/IssueCertificate.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { standardPrincipalCV, stringUtf8CV, uintCV } from '@stacks/transactions';
-import { CONTRACT_ADDRESS, CONTRACT_NAME, NETWORK } from '@/lib/contract';
+import { NETWORK } from '@/lib/contract';
 import { Award, User, Building, Calendar, Send } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import {
-    AppConfig,
-    openContractCall,
-    UserSession,
-} from "@stacks/connect";
 
-const appConfig = new AppConfig(["store_write"]);
-const userSession = new UserSession({ appConfig });
 // Add type declarations for wallet providers
 declare global {
     interface Window {
@@ -36,57 +29,6 @@ export const IssueCertificate: React.FC<IssueCertificateProps> = ({ user, onCert
         validityDays: '365'
     });
     const [isLoading, setIsLoading] = useState(false);
-    // useEffect(() => {
-    //     console.log('Wallet check:', {
-    //         StacksProvider: !!window.StacksProvider,
-    //         HiroWalletProvider: !!window.HiroWalletProvider,
-    //         XverseProviders: !!window.XverseProviders
-    //     });
-    // }, []);
-    // // Debug: Log constants on component mount
-    // useEffect(() => {
-    //     console.log('=== IssueCertificate Component Debug ===');
-    //     console.log('CONTRACT_ADDRESS:', CONTRACT_ADDRESS);
-    //     console.log('CONTRACT_NAME:', CONTRACT_NAME);
-    //     console.log('NETWORK:', NETWORK);
-    //     console.log('User:', user);
-    //     console.log('========================================');
-    // }, []);
-
-    const validateStacksAddress = (address: string): boolean => {
-        if (!address || address.trim().length === 0) {
-            return false;
-        }
-
-        const trimmedAddress = address.trim();
-
-        // Check basic format: should be 40-41 characters long and start with S
-        if (trimmedAddress.length < 40 || trimmedAddress.length > 41) {
-            console.log('Invalid length:', trimmedAddress.length);
-            return false;
-        }
-
-        // Should start with S (for both mainnet SP and testnet ST)
-        if (!trimmedAddress.startsWith('S')) {
-            console.log('Does not start with S');
-            return false;
-        }
-
-        // Should be ST for testnet or SP for mainnet
-        if (!trimmedAddress.startsWith('ST') && !trimmedAddress.startsWith('SP')) {
-            console.log('Invalid prefix, should start with ST or SP');
-            return false;
-        }
-
-        // Check if it contains only valid characters (Base58 without 0, O, I, l)
-        const validChars = /^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$/;
-        if (!validChars.test(trimmedAddress)) {
-            console.log('Contains invalid characters');
-            return false;
-        }
-
-        return true;
-    };
 
     const handleInputChange = (field: string, value: string) => {
         setFormData(prev => ({
@@ -94,41 +36,8 @@ export const IssueCertificate: React.FC<IssueCertificateProps> = ({ user, onCert
             [field]: value
         }));
     };
-    // const testWalletConnection = async () => {
-    //     try {
-    //         console.log('Testing wallet connection...');
-
-    //         // Simple test call
-    //         await openContractCall({
-    //             contractAddress: 'ST000000000000000000002AMW42H',
-    //             contractName: 'pox',
-    //             functionName: 'get-pox-info',
-    //             functionArgs: [],
-    //             network: NETWORK,
-    //             onFinish: (data) => {
-    //                 console.log('TEST SUCCESS - Wallet is working!', data);
-    //                 toast.success('Wallet connection test successful!');
-    //             },
-    //             onCancel: () => {
-    //                 console.log('TEST CANCELLED - But wallet opened!');
-    //                 toast('Test cancelled - but wallet is working!');
-    //             }
-    //         });
-
-    //     } catch (error) {
-    //         console.error('TEST FAILED:', error);
-    //         toast.error(`Wallet test failed: ${error instanceof Error ? error.message : String(error)}`);
-    //     }
-    // };
     const validateForm = (): boolean => {
         const errors: string[] = [];
-
-        // // Validate student address
-        // if (!formData.studentAddress?.trim()) {
-        //     errors.push('Student address is required');
-        // } else if (!validateStacksAddress(formData.studentAddress)) {
-        //     errors.push('Please enter a valid Stacks address (e.g., ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM)');
-        // }
 
         // Validate course name
         if (!formData.courseName?.trim()) {
@@ -163,7 +72,11 @@ export const IssueCertificate: React.FC<IssueCertificateProps> = ({ user, onCert
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        // Ensure stacks/connect only runs in client
+        const { AppConfig, openContractCall, UserSession } = await import('@stacks/connect');
 
+        const appConfig = new AppConfig(["store_write"]);
+        const userSession = new UserSession({ appConfig });
         console.log('=== Form Submit Started ===');
         console.log('Form data:', formData);
         console.log('User object:', user);
@@ -427,26 +340,6 @@ export const IssueCertificate: React.FC<IssueCertificateProps> = ({ user, onCert
                         </p>
                     </motion.div>
                 </div>
-
-                {/* Connection Status */}
-                {/* <div className="bg-black/20 rounded-lg p-4 text-xs text-purple-200">
-                    <p><strong>Status:</strong></p>
-                    <p>Wallet Connected: {user ? '✅ Yes' : '❌ No'}</p>
-                    <p>Contract: ST34H017VX32RKDE9QG5Z3F1AC54KFMMJQ7QMS5H4.cert-dapp</p>
-                    <p>Network: {NETWORK?.chainId ? `Chain ID ${NETWORK.chainId}` : 'Not configured'}</p>
-                    {user && (
-                        <p>User Address: {user.profile?.stxAddress?.testnet || user.profile?.stxAddress?.mainnet || 'Not available'}</p>
-                    )}
-                    {user && (
-                        <button
-                            type="button"
-                            onClick={testWalletConnection}
-                            className="mt-2 text-xs bg-purple-500/30 hover:bg-purple-500/50 text-white py-1 px-2 rounded transition-colors"
-                        >
-                            Test Wallet Connection
-                        </button>
-                    )}
-                </div> */}
 
                 <motion.button
                     initial={{ opacity: 0, y: 20 }}

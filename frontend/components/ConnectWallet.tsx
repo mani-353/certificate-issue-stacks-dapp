@@ -1,7 +1,6 @@
-"use client";
-//components/ConnectWallet.tsx
+'use client'; // <-- Must be here
+
 import React from 'react';
-import { showConnect } from '@stacks/connect';
 import { Wallet, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -11,22 +10,18 @@ interface ConnectWalletProps {
 }
 
 export const ConnectWallet: React.FC<ConnectWalletProps> = ({ setUser }) => {
-    const connectWallet = () => {
+    const connectWallet = async () => {
+        const { showConnect } = await import('@stacks/connect'); // dynamic import avoids SSR issue
+
         showConnect({
             appDetails: {
                 name: 'Certificate DApp',
-                icon: window.location.origin + '/logo192.png',
+                icon: window.location.origin + '/logo.png',
             },
             onFinish: ({ userSession }) => {
                 const userData = userSession.loadUserData();
                 setUser(userData);
-                toast.success('Wallet connected successfully!', {
-                    duration: 3000,
-                    style: {
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        color: 'white',
-                    },
-                });
+                toast.success('Wallet connected successfully!');
             },
             onCancel: () => {
                 toast.error('Wallet connection cancelled');
